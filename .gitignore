@@ -1,0 +1,18 @@
+# Arduino and editor-generated files
+build/
+.build/
+.vscode/
+.idea/
+*.tmp
+*.bak
+*.swp
+
+# Local device secrets and calibration data
+Secrets.h
+secrets.h
+*.local
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
