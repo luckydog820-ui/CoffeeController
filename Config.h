@@ -5,7 +5,7 @@
 
 namespace config {
 
-constexpr char FIRMWARE_VERSION[] = "0.4.0";
+constexpr char FIRMWARE_VERSION[] = "0.6.0";
 constexpr char DEVICE_NAME[] = "CoffeePilot";
 constexpr char BOARD_MODEL[] = "ESP32-S3-N16R8";
 
@@ -30,6 +30,7 @@ constexpr float MAX_PROFILE_PRESSURE_BAR = 12.0f;
 constexpr float SENSOR_STALE_PRESSURE_BAR = 0.0f;
 constexpr float SAFE_RESET_MAX_PRESSURE_BAR = 1.0f;
 constexpr float SAFE_RESET_MIN_BOILER_C = 20.0f;
+constexpr float PRESSURE_RELIEF_HYSTERESIS_BAR = 0.10f;
 constexpr float MANUAL_KNOB_FULL_SCALE_VOLTS = 3.3f;
 
 constexpr float PRESSURE_DIVIDER_RATIO =

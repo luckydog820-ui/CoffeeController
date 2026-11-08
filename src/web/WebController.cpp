@@ -161,6 +161,12 @@ bool isBrewing(const ControllerSnapshot& snapshot) {
          snapshot.brewState == BrewState::kStop;
 }
 
+bool isSupportedBaud(uint32_t baud) {
+  return baud == 1200 || baud == 2400 || baud == 4800 ||
+         baud == 9600 || baud == 19200 || baud == 38400 ||
+         baud == 57600 || baud == 115200;
+}
+
 }  // namespace
 
 WebController::WebController(ControllerState& state,
@@ -176,6 +182,7 @@ void WebController::begin() {
   server_.on("/api/status", HTTP_GET, [this]() { sendStatus(); });
   server_.on("/api/settings", HTTP_GET, [this]() { sendSettings(); });
   server_.on("/api/settings", HTTP_POST, [this]() { saveSettings(); });
+  server_.on("/api/e5cc", HTTP_POST, [this]() { saveE5cc(); });
   server_.on("/api/recipes", HTTP_POST, [this]() { saveRecipe(); });
   server_.on("/api/network", HTTP_POST, [this]() { saveNetwork(); });
   server_.on("/api/brew", HTTP_POST, [this]() { commandBrew(); });
@@ -233,6 +240,19 @@ void WebController::sendStatus() {
   appendBool(json, "knobActive", snapshot.knobActive);
   json += F(",");
   appendBool(json, "boilerAtSetpoint", snapshot.boilerAtSetpoint);
+  json += F(",");
+  appendBool(json, "extractionValveOpen", snapshot.extractionValveOpen);
+  json += F(",");
+  appendBool(json, "pressureReliefActive", snapshot.pressureReliefActive);
+  json += F(",");
+  appendJsonNumber(json, "reliefPressure",
+                   settings.settings.pressureReliefBar, 1);
+  json += F(",\"e5ccSlaveId\":");
+  json += String(settings.settings.e5cc.slaveId);
+  json += F(",\"e5ccBaud\":");
+  json += String(settings.settings.e5cc.baud);
+  json += F(",\"e5ccParity\":");
+  json += String(static_cast<uint8_t>(settings.settings.e5cc.parity));
   json += F(",\"uptimeMs\":");
   json += String(snapshot.uptimeMs);
   json += F(",\"heapFree\":");
@@ -257,7 +277,8 @@ void WebController::sendStatus() {
   appendBool(json, "accessPointActive",
              (WiFi.getMode() & WIFI_AP) == WIFI_AP);
   json += F(",");
-  appendString(json, "accessPointSsid", user_config::AP_SSID);
+  appendString(json, "accessPointSsid",
+               String(settings.settings.network.accessPointSsid));
   json += F(",");
   appendString(json, "accessPointIp", WiFi.softAPIP().toString());
   json += F(",");
@@ -283,6 +304,22 @@ void WebController::sendSettings() {
   json.reserve(4096);
   json = F("{");
   appendJsonNumber(json, "boilerSp", settings.boilerSetpointC, 1);
+  json += F(",");
+  appendJsonNumber(json, "reliefPressure", settings.pressureReliefBar, 1);
+  json += F(",");
+  json += F("\"e5ccSlaveId\":");
+  json += String(settings.e5cc.slaveId);
+  json += F(",\"e5ccBaud\":");
+  json += String(settings.e5cc.baud);
+  json += F(",\"e5ccParity\":");
+  json += String(static_cast<uint8_t>(settings.e5cc.parity));
+  json += F(",\"e5ccPvRegister\":");
+  json += String(settings.e5cc.pvRegister);
+  json += F(",\"e5ccSpRegister\":");
+  json += String(settings.e5cc.spRegister);
+  json += F(",");
+  appendJsonNumber(json, "e5ccScale",
+                   settings.e5cc.temperatureScale, 1);
   json += F(",");
   appendJsonNumber(json, "preVoltage", settings.profile.preinfusionVoltage, 2);
   json += F(",\"preTimeMs\":");
@@ -360,6 +397,8 @@ bool WebController::readSettingsFromJson(const String& body,
   float floatValue = 0.0f;
   if (readJsonNumber(body, "boilerSp", floatValue))
     settings.boilerSetpointC = floatValue;
+  if (readJsonNumber(body, "reliefPressure", floatValue))
+    settings.pressureReliefBar = floatValue;
   if (readJsonNumber(body, "preVoltage", floatValue))
     settings.profile.preinfusionVoltage = floatValue;
   if (readJsonNumber(body, "extractionPressure", floatValue))
@@ -435,6 +474,70 @@ void WebController::saveSettings() {
   postAppEvent(AppEventType::kSettingsChanged);
   server_.send(200, "application/json; charset=utf-8",
                F("{\"ok\":true}"));
+}
+
+void WebController::saveE5cc() {
+  const ControllerSnapshot snapshot = state_.snapshot();
+  if (isBrewing(snapshot) || snapshot.brewState == BrewState::kManual) {
+    server_.send(409, "application/json; charset=utf-8",
+                 F("{\"ok\":false,\"error\":\"stop_before_saving\"}"));
+    return;
+  }
+
+  const String body = server_.arg("plain");
+  float slaveId = 0.0f;
+  float baud = 0.0f;
+  float parity = 0.0f;
+  float pvRegister = 0.0f;
+  float spRegister = 0.0f;
+  float scale = 0.0f;
+  if (!readJsonNumber(body, "slaveId", slaveId) ||
+      !readJsonNumber(body, "baud", baud) ||
+      !readJsonNumber(body, "parity", parity) ||
+      !readJsonNumber(body, "pvRegister", pvRegister) ||
+      !readJsonNumber(body, "spRegister", spRegister) ||
+      !readJsonNumber(body, "scale", scale)) {
+    server_.send(400, "application/json; charset=utf-8",
+                 F("{\"ok\":false,\"error\":\"missing_e5cc_parameter\"}"));
+    return;
+  }
+
+  const uint32_t baudValue = static_cast<uint32_t>(lroundf(baud));
+  const int pvValue = lroundf(pvRegister);
+  const int spValue = lroundf(spRegister);
+  if (slaveId < 1 || slaveId > 247 ||
+      !isSupportedBaud(baudValue) ||
+      parity < static_cast<float>(E5ccParity::kNone) ||
+      parity > static_cast<float>(E5ccParity::kOdd) ||
+      pvValue < 1 || pvValue > 65535 ||
+      spValue < 1 || spValue > 65535 ||
+      (fabsf(scale - 0.1f) > 0.001f &&
+       fabsf(scale - 1.0f) > 0.001f)) {
+    server_.send(400, "application/json; charset=utf-8",
+                 F("{\"ok\":false,\"error\":\"invalid_e5cc_parameter\"}"));
+    return;
+  }
+
+  RuntimeSettings settings = state_.settings().settings;
+  settings.e5cc.slaveId = static_cast<uint8_t>(lroundf(slaveId));
+  settings.e5cc.baud = baudValue;
+  settings.e5cc.parity =
+      static_cast<E5ccParity>(lroundf(parity));
+  settings.e5cc.pvRegister = static_cast<uint16_t>(pvValue);
+  settings.e5cc.spRegister = static_cast<uint16_t>(spValue);
+  settings.e5cc.temperatureScale = scale;
+  settings = SettingsStore::validated(settings);
+
+  if (!settingsStore_.save(settings)) {
+    server_.send(500, "application/json; charset=utf-8",
+                 F("{\"ok\":false,\"error\":\"nvs_save_failed\"}"));
+    return;
+  }
+  state_.applySettings(settings);
+  postAppEvent(AppEventType::kSettingsChanged);
+  server_.send(
+      200, "application/json; charset=utf-8",
+      F("{\"ok\":true,\"restartingE5cc\":true}"));
 }
 
 void WebController::saveRecipe() {

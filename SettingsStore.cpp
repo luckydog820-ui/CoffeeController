@@ -2,6 +2,8 @@
 
 #include <Preferences.h>
 
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 
@@ -12,6 +14,9 @@ namespace {
 constexpr char kNamespace[] = "coffee_cfg";
 
 float clampFloat(float value, float low, float high) {
+  if (!std::isfinite(value)) {
+    return low;
+  }
   if (value < low) {
     return low;
   }
@@ -29,6 +34,12 @@ uint32_t clampU32(uint32_t value, uint32_t low, uint32_t high) {
     return high;
   }
   return value;
+}
+
+bool isSupportedBaud(uint32_t baud) {
+  return baud == 1200 || baud == 2400 || baud == 4800 ||
+         baud == 9600 || baud == 19200 || baud == 38400 ||
+         baud == 57600 || baud == 115200;
 }
 
 void copyText(char* destination, size_t destinationSize, const String& source) {
@@ -90,6 +101,27 @@ void saveRecipeProfile(Preferences& preferences, const String& prefix,
 RuntimeSettings SettingsStore::validated(RuntimeSettings settings) {
   settings.boilerSetpointC =
       clampFloat(settings.boilerSetpointC, 60.0f, 100.0f);
+  settings.pressureReliefBar =
+      clampFloat(settings.pressureReliefBar, 2.0f, 15.5f);
+  settings.e5cc.slaveId =
+      static_cast<uint8_t>(std::min<uint16_t>(
+          std::max<uint16_t>(settings.e5cc.slaveId, 1), 247));
+  if (!isSupportedBaud(settings.e5cc.baud)) {
+    settings.e5cc.baud = 9600;
+  }
+  if (settings.e5cc.parity != E5ccParity::kNone &&
+      settings.e5cc.parity != E5ccParity::kEven &&
+      settings.e5cc.parity != E5ccParity::kOdd) {
+    settings.e5cc.parity = E5ccParity::kEven;
+  }
+  if (settings.e5cc.pvRegister == 0) {
+    settings.e5cc.pvRegister = 0x2000;
+  }
+  if (settings.e5cc.spRegister == 0) {
+    settings.e5cc.spRegister = 0x2103;
+  }
+  settings.e5cc.temperatureScale =
+      fabsf(settings.e5cc.temperatureScale - 1.0f) < 0.01f ? 1.0f : 0.1f;
 
   settings.profile.preinfusionVoltage =
       clampFloat(settings.profile.preinfusionVoltage, 0.0f,
@@ -168,6 +200,22 @@ RuntimeSettings SettingsStore::load() {
 
   settings.boilerSetpointC = preferences.getFloat(
       "boiler_sp", user_config::DEFAULT_BOILER_SETPOINT_C);
+  settings.pressureReliefBar =
+      preferences.getFloat("relief_p", settings.pressureReliefBar);
+  settings.e5cc.slaveId =
+      preferences.getUChar("e5_id", settings.e5cc.slaveId);
+  settings.e5cc.baud =
+      preferences.getUInt("e5_baud", settings.e5cc.baud);
+  settings.e5cc.parity =
+      static_cast<E5ccParity>(
+          preferences.getUChar("e5_par",
+                               static_cast<uint8_t>(settings.e5cc.parity)));
+  settings.e5cc.pvRegister = static_cast<uint16_t>(
+      preferences.getUInt("e5_pv", settings.e5cc.pvRegister));
+  settings.e5cc.spRegister = static_cast<uint16_t>(
+      preferences.getUInt("e5_sp", settings.e5cc.spRegister));
+  settings.e5cc.temperatureScale =
+      preferences.getFloat("e5_scale", settings.e5cc.temperatureScale);
   settings.profile.preinfusionVoltage =
       preferences.getFloat("pre_v", settings.profile.preinfusionVoltage);
   settings.profile.preinfusionTimeMs =
@@ -235,6 +283,14 @@ bool SettingsStore::save(const RuntimeSettings& settings) {
     return false;
   }
   preferences.putFloat("boiler_sp", safe.boilerSetpointC);
+  preferences.putFloat("relief_p", safe.pressureReliefBar);
+  preferences.putUChar("e5_id", safe.e5cc.slaveId);
+  preferences.putUInt("e5_baud", safe.e5cc.baud);
+  preferences.putUChar("e5_par",
+                       static_cast<uint8_t>(safe.e5cc.parity));
+  preferences.putUInt("e5_pv", safe.e5cc.pvRegister);
+  preferences.putUInt("e5_sp", safe.e5cc.spRegister);
+  preferences.putFloat("e5_scale", safe.e5cc.temperatureScale);
   preferences.putFloat("pre_v", safe.profile.preinfusionVoltage);
   preferences.putUInt("pre_ms", safe.profile.preinfusionTimeMs);
   preferences.putFloat("ext_p", safe.profile.extractionPressureBar);

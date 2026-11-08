@@ -14,23 +14,24 @@ static const char kIndexHtml[] PROGMEM = R"COFFEEHTML(<!doctype html>
 :root{color-scheme:dark;--bg:#17110e;--panel:#211814;--panel2:#2a1e18;--line:rgba(255,235,213,.12);--text:#fff6eb;--muted:#ad9d90;--crema:#e8b76f;--amber:#f0a451;--good:#79c8a1;--bad:#fa7c72;--blue:#78b7d9;--shadow:0 22px 60px rgba(0,0,0,.28)}
 *{box-sizing:border-box}
 html{background:var(--bg)}
-body{margin:0;min-height:100svh;background:radial-gradient(circle at 84% -10%,rgba(208,130,55,.22),transparent 34rem),radial-gradient(circle at -12% 38%,rgba(114,66,38,.18),transparent 28rem),linear-gradient(155deg,#17110e,#120e0c 70%);color:var(--text);font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+body{margin:0;min-height:100svh;background:radial-gradient(circle at 84% -10%,rgba(208,130,55,.25),transparent 34rem),radial-gradient(circle at -12% 38%,rgba(114,66,38,.2),transparent 28rem),linear-gradient(155deg,#17110e,#120e0c 70%);color:var(--text);font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.28;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:28px 28px;mask-image:linear-gradient(to bottom,#000,transparent 65%)}
 button,input,select{font:inherit}
 button{-webkit-tap-highlight-color:transparent}
-.shell{width:min(100%,760px);margin:0 auto;padding:max(18px,env(safe-area-inset-top)) 16px calc(108px + env(safe-area-inset-bottom))}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.shell{position:relative;z-index:1;width:min(100%,760px);margin:0 auto;padding:max(18px,env(safe-area-inset-top)) 16px calc(108px + env(safe-area-inset-bottom))}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;padding:2px 2px 0}
 .brand{display:flex;align-items:center;gap:11px;min-width:0}
 .mark{width:38px;height:38px;border-radius:13px;background:linear-gradient(145deg,var(--crema),#a95f2d);display:grid;place-items:center;color:#25150c;box-shadow:0 8px 24px rgba(218,146,75,.24)}
 .mark svg{width:22px;height:22px}
 .brand h1{font-size:17px;letter-spacing:.02em;margin:0;line-height:1.1}
 .brand p{font-size:11px;color:var(--muted);margin:4px 0 0;letter-spacing:.08em;text-transform:uppercase}
-.connection{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:rgba(33,24,20,.76);padding:9px 12px;border-radius:999px;color:var(--muted);font-size:12px;white-space:nowrap}
+.connection{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:rgba(33,24,20,.76);padding:9px 12px;border-radius:999px;color:var(--muted);font-size:12px;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
 .connection::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px rgba(121,200,161,.1)}
 .connection.offline::before{background:var(--bad);box-shadow:0 0 0 4px rgba(250,124,114,.1)}
 .view{animation:in .24s ease-out}
 .view[hidden]{display:none}
 @keyframes in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
-.status-line{display:flex;align-items:center;gap:9px;margin:0 2px 12px;color:var(--muted);font-size:13px}
+.status-line{display:flex;align-items:center;gap:9px;margin:0 0 12px;padding:11px 13px;border:1px solid var(--line);border-radius:15px;background:rgba(31,22,18,.62);backdrop-filter:blur(12px);color:var(--muted);font-size:12px}
 .state-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
 .state-dot.ready{background:var(--good);box-shadow:0 0 13px rgba(121,200,161,.55)}
 .state-dot.active{background:var(--amber);box-shadow:0 0 13px rgba(240,164,81,.7);animation:pulse 1.45s infinite}
@@ -39,23 +40,29 @@ button{-webkit-tap-highlight-color:transparent}
 .state-name{color:var(--text);font-weight:650}
 .fault-banner{display:none;margin:0 0 14px;padding:13px 15px;border:1px solid rgba(250,124,114,.35);background:rgba(91,32,29,.38);border-radius:16px;color:#ffc2bc;font-size:13px;line-height:1.5}
 .fault-banner.show{display:block}
-.live-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.live-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}
+.overview-grid,.overview-left,.overview-right{min-width:0}
 .metric-card,.chart-card,.panel-card{background:linear-gradient(150deg,rgba(43,31,25,.96),rgba(31,23,19,.96));border:1px solid var(--line);border-radius:21px;box-shadow:var(--shadow)}
-.metric-card{min-height:148px;padding:17px 16px 15px;position:relative;overflow:hidden}
+.metric-card{min-height:154px;padding:17px 16px 15px;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 16px 42px rgba(0,0,0,.2)}
+.metric-card::before{content:"";position:absolute;left:16px;right:16px;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(232,183,111,.48),transparent)}
 .metric-card::after{content:"";position:absolute;width:100px;height:100px;right:-48px;top:-48px;border-radius:50%;background:rgba(232,183,111,.08)}
+.metric-card.pressure-card::before{background:linear-gradient(90deg,transparent,rgba(240,164,81,.6),transparent)}
+.metric-card.pressure-card::after{background:rgba(240,164,81,.09)}
+.metric-card.relief{border-color:rgba(250,124,114,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 0 0 1px rgba(250,124,114,.08),0 18px 44px rgba(95,25,20,.24)}
 .eyebrow{font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin:0 0 13px}
 .reading{display:flex;align-items:baseline;gap:5px;line-height:1}
 .reading strong{font-size:clamp(37px,10vw,52px);font-weight:580;letter-spacing:-.055em;font-variant-numeric:tabular-nums}
 .reading span{font-size:13px;color:var(--muted)}
-.micro-row{display:flex;justify-content:space-between;gap:8px;margin-top:15px;color:var(--muted);font-size:11px}
+.micro-row{display:flex;justify-content:space-between;gap:8px;margin-top:12px;color:var(--muted);font-size:11px}
 .meter{height:4px;background:rgba(255,255,255,.07);border-radius:9px;overflow:hidden;margin-top:11px}
 .meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,#b96d39,var(--crema));border-radius:inherit;transition:width .5s ease}
 .meter.pressure i{background:linear-gradient(90deg,#a7652f,var(--amber))}
-.brew-zone{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:13px 0 12px;padding:14px 8px 14px 17px;background:linear-gradient(135deg,rgba(233,181,108,.13),rgba(38,27,22,.88));border:1px solid rgba(232,183,111,.19);border-radius:22px}
+.brew-zone{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:13px 0 12px;padding:16px 9px 16px 18px;background:linear-gradient(135deg,rgba(233,181,108,.17),rgba(38,27,22,.92));border:1px solid rgba(232,183,111,.23);border-radius:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 18px 42px rgba(0,0,0,.17)}
+.brew-copy{min-width:0;flex:1}
 .brew-copy strong{display:block;font-size:15px;font-weight:620}
 .brew-copy span{display:block;color:var(--muted);font-size:12px;line-height:1.45;margin-top:5px;max-width:210px}
 .brew-actions{display:flex;align-items:center;gap:10px;flex:none}
-.recipe-picker{width:112px;min-width:0}
+.recipe-picker{width:112px;min-width:0;flex:0 1 112px}
 .recipe-picker span{display:block;color:var(--muted);font-size:10px;letter-spacing:.05em;margin:0 0 5px 2px}
 .recipe-picker select,.text-input,.recipe-toolbar select{width:100%;border:1px solid var(--line);border-radius:12px;background:#1b1310;color:var(--text);outline:0;min-height:42px;padding:0 11px}
 .recipe-picker select{font-size:12px;text-overflow:ellipsis}
@@ -74,10 +81,11 @@ select option{background:#211814;color:var(--text)}
 .legend .p i{background:var(--crema)}.legend .t i{background:var(--blue)}
 .chart-wrap{height:126px;position:relative}
 canvas{width:100%;height:100%;display:block}
-.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.mini{padding:13px 12px;border-radius:16px;background:rgba(35,25,21,.92);border:1px solid var(--line)}
+.mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.mini{padding:13px 12px;border-radius:16px;background:linear-gradient(145deg,rgba(38,27,22,.96),rgba(30,22,18,.96));border:1px solid var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
 .mini span{display:block;color:var(--muted);font-size:10px;margin-bottom:6px}
 .mini strong{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.mini strong.good{color:var(--good)}.mini strong.warn{color:var(--amber)}.mini strong.bad{color:var(--bad)}
 .section-head{padding:3px 2px 17px}
 .section-head h2{font-size:24px;line-height:1.1;margin:0;font-weight:610;letter-spacing:-.025em}
 .section-head p{color:var(--muted);font-size:12px;line-height:1.5;margin:7px 0 0}
@@ -91,7 +99,8 @@ canvas{width:100%;height:100%;display:block}
 .recipe-footer{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0 8px}
 .recipe-footer .primary,.recipe-footer .secondary,.recipe-footer .danger{flex:1;min-width:132px;padding:0 12px}
 .setting-group{padding:0;overflow:hidden}
-.setting-group summary{list-style:none;cursor:pointer;min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 17px}
+.setting-group summary{list-style:none;cursor:pointer;min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 17px;transition:background .2s}
+.setting-group summary:hover{background:rgba(255,255,255,.025)}
 .setting-group summary::-webkit-details-marker{display:none}
 .setting-group summary strong{display:block;font-size:14px;font-weight:620}
 .setting-group summary small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
@@ -103,6 +112,8 @@ canvas{width:100%;height:100%;display:block}
 .field-stack label span{display:block;margin-bottom:7px}
 .field-stack small{display:block;color:var(--muted);font-size:10px;line-height:1.5;margin-top:6px}
 .network-save{width:100%;margin:2px 0 7px}
+.safety-setting{margin:12px 0 4px;padding:14px;border:1px solid rgba(240,164,81,.22);border-radius:16px;background:linear-gradient(135deg,rgba(240,164,81,.09),rgba(240,164,81,.025))}
+.safety-setting .setting-label label{color:#ffd8ae}
 .setting{padding:16px 0;border-bottom:1px solid var(--line)}
 .setting:last-child{border:0}
 .setting-label{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -153,6 +164,7 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
  .shell{padding-top:32px}
  .overview-grid{display:grid;grid-template-columns:.92fr 1.08fr;gap:12px;align-items:start}
  .overview-right .brew-zone{margin-top:0}
+ .mini-grid{grid-template-columns:repeat(4,1fr)}
  .nav{position:sticky;bottom:18px;margin-top:26px}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -188,11 +200,12 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
               <div class="meter"><i id="tempMeter"></i></div>
               <div class="micro-row"><span>目标</span><span><b id="tempTarget">--</b> °C</span></div>
             </article>
-            <article class="metric-card">
+            <article class="metric-card pressure-card" id="pressureCard">
               <p class="eyebrow">当前压力</p>
               <div class="reading"><strong id="pressureValue">--</strong><span>bar</span></div>
               <div class="meter pressure"><i id="pressureMeter"></i></div>
               <div class="micro-row"><span>泵输出</span><span><b id="pumpVoltageInline">--</b> V</span></div>
+              <div class="micro-row"><span>泄压设定</span><span><b id="reliefPressureInline">--</b> bar</span></div>
             </article>
           </div>
         </div>
@@ -223,6 +236,7 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
             <div class="mini"><span>泵控制源</span><strong id="pumpSource">--</strong></div>
             <div class="mini"><span>本杯时间</span><strong id="brewElapsed">0.0s</strong></div>
             <div class="mini"><span>通信</span><strong id="commsState">--</strong></div>
+            <div class="mini"><span>萃取电磁阀</span><strong id="valveState">--</strong></div>
           </div>
         </div>
       </div>
@@ -276,6 +290,11 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
             <div class="setting-label"><label for="boilerSp">锅炉目标温度</label><output id="boilerSpOut"></output></div>
             <input type="range" id="boilerSp" min="70" max="100" step="0.5">
           </div>
+          <div class="safety-setting">
+            <div class="setting-label"><label for="reliefPressure">自动泄压设定值</label><output id="reliefPressureOut"></output></div>
+            <input type="range" id="reliefPressure" min="2" max="15.5" step="0.1">
+            <small>仅在未进行自动或手动萃取时监测；压力超过设定值会打开常闭萃取电磁阀，降到设定值以下 0.1 bar 后自动关闭。</small>
+          </div>
           <div class="setting">
             <div class="setting-label"><label for="pidKp">压力环 Kp</label><output id="pidKpOut"></output></div>
             <input type="range" id="pidKp" min="0" max="3" step="0.05">
@@ -301,6 +320,22 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
             <label><span>Wi-Fi 密码</span><input class="text-input" id="wifiPassword" type="password" maxlength="63" autocomplete="new-password" placeholder="留空保持当前密码"></label>
             <small>保存后设备会尝试连接新的家庭 Wi-Fi。连接失败时设备热点仍可用。</small>
             <button class="primary network-save" id="saveWifi">保存并连接 Wi-Fi</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="panel-card setting-group">
+        <summary><div><strong>E5CC 温控器通讯</strong><small>Modbus RTU 地址、波特率和寄存器</small></div><i class="chevron"></i></summary>
+        <div class="group-content">
+          <div class="field-stack">
+            <label><span>从站地址</span><input class="text-input" id="e5ccSlaveId" type="number" min="1" max="247" step="1" inputmode="numeric"></label>
+            <label><span>波特率</span><select class="text-input" id="e5ccBaud"><option value="1200">1200</option><option value="2400">2400</option><option value="4800">4800</option><option value="9600">9600</option><option value="19200">19200</option><option value="38400">38400</option><option value="57600">57600</option><option value="115200">115200</option></select></label>
+            <label><span>数据格式</span><select class="text-input" id="e5ccParity"><option value="0">8N1（无校验）</option><option value="1">8E1（偶校验）</option><option value="2">8O1（奇校验）</option></select></label>
+            <label><span>PV 温度寄存器</span><input class="text-input" id="e5ccPvRegister" inputmode="text" autocomplete="off" placeholder="0x2000"></label>
+            <label><span>SP 目标寄存器</span><input class="text-input" id="e5ccSpRegister" inputmode="text" autocomplete="off" placeholder="0x2103"></label>
+            <label><span>温度数据倍率</span><select class="text-input" id="e5ccScale"><option value="0.1">0.1 °C / 计数</option><option value="1">1 °C / 计数</option></select></label>
+            <small>固定 8 数据位、1 停止位。参数必须与 E5CC 面板一致；保存后 RS485 将短暂重建连接。</small>
+            <button class="primary network-save" id="saveE5cc">保存 E5CC 通讯设置</button>
           </div>
         </div>
       </details>
@@ -401,6 +436,7 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
     bindInput("extractionTime", v => `${v.toFixed(0)} s`, "extractionTimeOut"),
     bindInput("maxPressure", v => `${v.toFixed(1)} bar`, "maxPressureOut"),
     bindInput("boilerSp", v => `${v.toFixed(1)} °C`, "boilerSpOut"),
+    bindInput("reliefPressure", v => `${v.toFixed(1)} bar`, "reliefPressureOut"),
     bindInput("pidKp", v => v.toFixed(2), "pidKpOut"),
     bindInput("pidKi", v => v.toFixed(2), "pidKiOut"),
     bindInput("pidKd", v => v.toFixed(2), "pidKdOut")
@@ -426,16 +462,24 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
     $("tempTarget").textContent = fixed(s.tempSp,1);
     $("pressureValue").textContent = fixed(s.pressure,2);
     $("pumpVoltageInline").textContent = fixed(s.pumpVoltage,2);
+    $("reliefPressureInline").textContent = fixed(s.reliefPressure,1);
+    $("pressureCard").classList.toggle("relief", !!s.pressureReliefActive);
     $("pumpSource").textContent = ({AUTO:"自动",MANUAL:"旋钮",SAFETY:"安全锁止",IDLE:"待机"}[s.pumpSource] || "--");
     $("brewElapsed").textContent = `${((s.brewElapsedMs||0)/1000).toFixed(1)}s`;
     $("commsState").textContent = s.modbusOnline ? "在线" : "离线";
+    $("commsState").className = s.modbusOnline ? "good" : "bad";
+    $("valveState").textContent = s.pressureReliefActive ? "自动泄压" : (s.extractionValveOpen ? "萃取开启" : "常闭");
+    $("valveState").className = s.pressureReliefActive ? "warn" : (s.extractionValveOpen ? "good" : "");
     $("tempMeter").style.width = `${Math.max(0,Math.min(100,((s.tempPv||0)/105)*100))}%`;
-    $("pressureMeter").style.width = `${Math.max(0,Math.min(100,((s.pressure||0)/12)*100))}%`;
+    $("pressureMeter").style.width = `${Math.max(0,Math.min(100,((s.pressure||0)/16)*100))}%`;
     $("faultBanner").classList.toggle("show", s.faultMask !== 0);
     $("faultBanner").textContent = s.faultMask ? `安全锁已触发：${s.faultText || "未知故障"}。泵输出已强制归零。` : "";
     $("modbusPill").textContent = s.modbusOnline ? "正常" : "异常";
     $("modbusPill").classList.toggle("bad", !s.modbusOnline);
-    $("modbusDetail").textContent = s.modbusOnline ? "E5CC 回读正常" : "检查地址、波特率和校验位";
+    const e5ccFormat = ({0:"8N1",1:"8E1",2:"8O1"}[s.e5ccParity] || "8E1");
+    $("modbusDetail").textContent = s.modbusOnline
+      ? `E5CC #${s.e5ccSlaveId} · ${s.e5ccBaud} ${e5ccFormat} · 回读正常`
+      : `E5CC #${s.e5ccSlaveId} · ${s.e5ccBaud} ${e5ccFormat} · 通信异常`;
     $("sensorPill").textContent = s.pressureSensorValid ? "正常" : "异常";
     $("sensorPill").classList.toggle("bad", !s.pressureSensorValid);
     $("sensorDetail").textContent = s.pressureSensorValid ? "ADC 信号有效" : "检查分压与接线";
@@ -462,12 +506,13 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
     $("saveRecipe").disabled = locked;
     $("saveRecipeAs").disabled = locked || (settings?.recipes?.length || 0) >= 8;
     $("deleteRecipe").disabled = locked || (settings?.recipes?.length || 0) <= 1;
+    $("saveE5cc").disabled = locked;
     if(Number.isInteger(s.activeRecipeIndex) && $("activeRecipe").options.length){
       $("activeRecipe").value = String(s.activeRecipeIndex);
       $("recipeSelect").value = String(s.activeRecipeIndex);
     }
     $("brewTitle").textContent = brewing ? `${meta[0]} · ${((s.brewElapsedMs||0)/1000).toFixed(1)}s` : (manual ? "手动控制中" : (s.activeRecipeName ? `自动萃取 · ${s.activeRecipeName}` : "自动萃取"));
-    $("brewDescription").textContent = brewing ? "点击停止会立即进入泵归零流程" : manual ? "旋钮离开关断位时自动程序保持中止" : (ready ? "锅炉已到位，可以开始一杯" : "预热完成后即可开始一杯");
+    $("brewDescription").textContent = s.pressureReliefActive ? "压力超过设定值，电磁阀正在自动泄压" : brewing ? "点击停止会立即关闭电磁阀并归零泵输出" : manual ? "旋钮离开关断位时自动程序保持中止" : (ready ? "锅炉已到位，可以开始一杯" : "预热完成后即可开始一杯");
 
     points.push({p:s.pressure, t:s.tempPv, time:Date.now()});
     if(points.length > 140) points.shift();
@@ -535,7 +580,7 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
     const values = {
       preVoltage:[s.preVoltage,2], preTime:[s.preTimeMs/1000,1],
       extractionPressure:[s.extractionPressure,1], extractionTime:[s.extractionTimeMs/1000,0],
-      maxPressure:[s.maxPressure,1], boilerSp:[s.boilerSp,1],
+      maxPressure:[s.maxPressure,1], boilerSp:[s.boilerSp,1], reliefPressure:[s.reliefPressure,1],
       pidKp:[s.pidKp,2], pidKi:[s.pidKi,2], pidKd:[s.pidKd,2]
     };
     Object.entries(values).forEach(([id,[value,digits]]) => {
@@ -561,11 +606,28 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
     $("apSsid").value = settings?.apSsid || "";
     $("wifiPassword").value = "";
     $("apPassword").value = "";
+    $("e5ccSlaveId").value = settings?.e5ccSlaveId ?? 1;
+    $("e5ccBaud").value = String(settings?.e5ccBaud ?? 9600);
+    $("e5ccParity").value = String(settings?.e5ccParity ?? 1);
+    $("e5ccScale").value = String(Number(settings?.e5ccScale ?? 0.1));
+    $("e5ccPvRegister").value = e5ccHex(settings?.e5ccPvRegister ?? 0x2000);
+    $("e5ccSpRegister").value = e5ccHex(settings?.e5ccSpRegister ?? 0x2103);
+  }
+
+  function e5ccHex(value){
+    return `0x${Number(value).toString(16).toUpperCase().padStart(4,"0")}`;
+  }
+
+  function parseRegister(text, fallback){
+    const value=text.trim();
+    if(!value) return fallback;
+    const parsed=/^0x/i.test(value) ? parseInt(value.slice(2),16) : parseInt(value,10);
+    return Number.isInteger(parsed) ? parsed : NaN;
   }
 
   async function loadSettings(){
     try{ populateSettings(await getJson("/api/settings")); }
-    catch(error){ toast("配方读取失败"); }
+    catch(error){ toast("设备设置读取失败"); }
   }
 
   function collectRecipe(){
@@ -633,11 +695,12 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
     try{
       await getJson("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
         boilerSp:Number($("boilerSp").value),
+        reliefPressure:Number($("reliefPressure").value),
         pidKp:Number($("pidKp").value),
         pidKi:Number($("pidKi").value),
         pidKd:Number($("pidKd").value)
       })});
-      toast("温度与 PID 设置已保存");
+      toast("温度、PID 与泄压设置已保存");
       await loadSettings();
       await poll();
     }catch(error){
@@ -664,6 +727,34 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
     }finally{button.disabled=false;}
   }
 
+  async function saveE5ccSettings(){
+    const slaveId=Number($("e5ccSlaveId").value);
+    const pvRegister=parseRegister($("e5ccPvRegister").value,NaN);
+    const spRegister=parseRegister($("e5ccSpRegister").value,NaN);
+    if(!Number.isInteger(slaveId) || slaveId < 1 || slaveId > 247 ||
+       !Number.isInteger(pvRegister) || !Number.isInteger(spRegister)){
+      toast("请检查从站地址和寄存器格式");
+      return;
+    }
+    const button=$("saveE5cc");
+    button.disabled=true;
+    try{
+      await getJson("/api/e5cc",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        slaveId,
+        baud:Number($("e5ccBaud").value),
+        parity:Number($("e5ccParity").value),
+        pvRegister,
+        spRegister,
+        scale:Number($("e5ccScale").value)
+      })});
+      toast("E5CC 通讯设置已保存，正在重新连接");
+      await loadSettings();
+      setTimeout(poll,900);
+    }catch(error){
+      toast(error.message === "stop_before_saving" ? "请先停止萃取或手动输出" : "E5CC 通讯设置保存失败");
+    }finally{button.disabled=false;}
+  }
+
   $("recipeSelect").addEventListener("change",event=>selectRecipe(Number(event.target.value)).catch(()=>loadSettings()));
   $("activeRecipe").addEventListener("change",event=>selectRecipe(Number(event.target.value)).catch(()=>loadSettings()));
   $("saveRecipe").addEventListener("click",()=>saveRecipeItem(false));
@@ -672,6 +763,7 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
   $("saveSystem").addEventListener("click",saveSystemSettings);
   $("saveWifi").addEventListener("click",()=>saveNetworkSettings("wifi"));
   $("saveAp").addEventListener("click",()=>saveNetworkSettings("ap"));
+  $("saveE5cc").addEventListener("click",saveE5ccSettings);
 
   $("brewButton").addEventListener("click", async()=>{
     if(!status) return;

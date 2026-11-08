@@ -70,10 +70,27 @@ struct NetworkConfig {
   char accessPointPassword[kWifiPasswordLength + 1] = {};
 };
 
+enum class E5ccParity : uint8_t {
+  kNone = 0,
+  kEven = 1,
+  kOdd = 2,
+};
+
+struct E5ccConfig {
+  uint8_t slaveId = 1;
+  uint32_t baud = 9600;
+  E5ccParity parity = E5ccParity::kEven;
+  uint16_t pvRegister = 0x2000;
+  uint16_t spRegister = 0x2103;
+  float temperatureScale = 0.1f;
+};
+
 struct RuntimeSettings {
   BrewProfile profile;
   PidConfig pid;
   float boilerSetpointC = 93.0f;
+  float pressureReliefBar = 11.0f;
+  E5ccConfig e5cc;
   RecipeLibrary recipes;
   NetworkConfig network;
 };
@@ -95,6 +112,8 @@ struct ControllerSnapshot {
   bool pressureSensorValid = false;
   bool knobActive = false;
   bool boilerAtSetpoint = false;
+  bool extractionValveOpen = false;
+  bool pressureReliefActive = false;
 };
 
 struct ControllerSettingsSnapshot {

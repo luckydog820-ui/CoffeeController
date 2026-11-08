@@ -4,9 +4,13 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
 
+#include "AppTypes.h"
+
 class E5ccModbus {
  public:
   void begin();
+  void configure(const E5ccConfig& config);
+  bool configurationMatches(const E5ccConfig& config) const;
   bool readPv(float& celsius);
   bool readSp(float& celsius);
   bool writeSp(float celsius);
@@ -21,6 +25,7 @@ class E5ccModbus {
   static uint16_t crc16(const uint8_t* data, size_t length);
   void setTransmit(bool transmit);
 
+  E5ccConfig config_;
   uint32_t consecutiveFailures_ = 0;
 };
 

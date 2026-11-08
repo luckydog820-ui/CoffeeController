@@ -18,6 +18,7 @@ class ControllerState {
   void updatePressure(float bar, bool valid);
   void updateKnob(bool active, float requestedVoltage);
   void updatePump(float commandedVoltage, PumpSource source);
+  void updateHydraulics(bool extractionValveOpen, bool pressureReliefActive);
   void setFaultMask(uint32_t mask);
   void enterBrewState(BrewState state, uint32_t nowMs);
 

@@ -12,6 +12,7 @@
 #include "SettingsStore.h"
 #include "src/app/EspressoStateMachine.h"
 #include "src/drivers/E5ccModbus.h"
+#include "src/drivers/ExtractionValve.h"
 #include "src/drivers/PressureSensor.h"
 #include "src/drivers/PumpDriver.h"
 #include "src/services/PressureLoop.h"
@@ -24,6 +25,7 @@ QueueHandle_t gAppEventQueue = nullptr;
 ControllerState gState;
 SettingsStore gSettingsStore;
 PumpDriver gPump;
+ExtractionValve gExtractionValve;
 PressureSensor gPressureSensor;
 E5ccModbus gE5cc;
 PressureLoop gPressureLoop;
@@ -185,18 +187,26 @@ void serviceNetwork(uint32_t nowMs) {
 }
 
 void modbusTask(void*) {
-  gE5cc.begin();
+  gE5cc.configure(gState.settings().settings.e5cc);
   bool setpointInitialized = false;
   float lastWrittenSetpoint = NAN;
   TickType_t lastWake = xTaskGetTickCount();
 
   for (;;) {
+    const RuntimeSettings settings = gState.settings().settings;
+    if (!gE5cc.configurationMatches(settings.e5cc)) {
+      Serial.println("Applying E5CC communication settings");
+      gE5cc.configure(settings.e5cc);
+      setpointInitialized = false;
+      lastWrittenSetpoint = NAN;
+      gState.setModbusOnline(false);
+    }
+
     float pvC = NAN;
     if (gE5cc.readPv(pvC)) {
       gState.updateBoilerPv(pvC);
       gState.setModbusOnline(true);
 
-      const RuntimeSettings settings = gState.settings().settings;
       const bool changed =
           !setpointInitialized ||
           !isfinite(lastWrittenSetpoint) ||
@@ -227,6 +237,8 @@ void controlTask(void*) {
   uint32_t lastPidMs = millis();
   BrewState previousState = BrewState::kBoot;
   float autoVoltage = 0.0f;
+  bool pressureReliefLatched = false;
+  bool previousValveOpen = false;
 
   for (;;) {
     const uint32_t nowMs = millis();
@@ -239,6 +251,11 @@ void controlTask(void*) {
     const bool closedLoop =
         snapshot.brewState == BrewState::kPressureRamp ||
         snapshot.brewState == BrewState::kExtraction;
+    const bool extractionActive =
+        snapshot.brewState == BrewState::kPreInfusion ||
+        snapshot.brewState == BrewState::kPressureRamp ||
+        snapshot.brewState == BrewState::kExtraction ||
+        snapshot.brewState == BrewState::kManual;
 
     if (snapshot.brewState != previousState) {
       if (snapshot.brewState == BrewState::kPressureRamp ||
@@ -249,6 +266,40 @@ void controlTask(void*) {
         autoVoltage = 0.0f;
       }
       previousState = snapshot.brewState;
+    }
+
+    if (extractionActive) {
+      pressureReliefLatched = false;
+    } else if (pressure.valid) {
+      const float reliefThreshold = settings.pressureReliefBar;
+      if (!pressureReliefLatched &&
+          pressure.bar >= reliefThreshold) {
+        pressureReliefLatched = true;
+        Serial.print("Pressure relief OPEN at ");
+        Serial.print(pressure.bar, 2);
+        Serial.println(" bar");
+      } else if (pressureReliefLatched &&
+                 pressure.bar <=
+                     reliefThreshold -
+                         config::PRESSURE_RELIEF_HYSTERESIS_BAR) {
+        pressureReliefLatched = false;
+        Serial.println("Pressure relief CLOSED");
+      }
+    } else {
+      pressureReliefLatched = false;
+    }
+
+    const bool valveOpen = extractionActive || pressureReliefLatched;
+    gExtractionValve.setOpen(valveOpen);
+    gState.updateHydraulics(valveOpen, pressureReliefLatched);
+    if (valveOpen != previousValveOpen) {
+      if (pressureReliefLatched) {
+        Serial.println("Extraction valve: pressure relief");
+      } else {
+        Serial.println(valveOpen ? "Extraction valve: OPEN"
+                                 : "Extraction valve: CLOSED");
+      }
+      previousValveOpen = valveOpen;
     }
 
     if (snapshot.brewState == BrewState::kPreInfusion &&
@@ -300,6 +351,7 @@ void safetyTask(void*) {
     if (nowMs > 3000 &&
         nowMs - gControlHeartbeatMs > 1500) {
       gPump.emergencyOff();
+      gExtractionValve.emergencyClose();
       Serial.println("Control task stalled: pump off, restarting");
       delay(30);
       esp_restart();
@@ -484,7 +536,8 @@ void setup() {
   gState.applySettings(savedSettings);
   gState.setFaultMask(kFaultNone);
 
-  // 启动网络期间泵保持关闭，避免网络等待造成意外输出。
+  // 启动网络期间泵和常闭萃取阀保持关闭，避免网络等待造成意外输出。
+  gExtractionValve.begin();
   gPump.begin();
   gPump.setVoltage(0.0f);
   if (startNetwork(savedSettings.network)) {

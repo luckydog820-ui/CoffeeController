@@ -79,6 +79,14 @@ void ControllerState::updatePump(float commandedVoltage, PumpSource source) {
   xSemaphoreGive(mutex_);
 }
 
+void ControllerState::updateHydraulics(bool extractionValveOpen,
+                                       bool pressureReliefActive) {
+  xSemaphoreTake(mutex_, portMAX_DELAY);
+  snapshot_.extractionValveOpen = extractionValveOpen;
+  snapshot_.pressureReliefActive = pressureReliefActive;
+  xSemaphoreGive(mutex_);
+}
+
 void ControllerState::setFaultMask(uint32_t mask) {
   xSemaphoreTake(mutex_, portMAX_DELAY);
   snapshot_.faultMask = mask;

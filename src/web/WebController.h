@@ -17,6 +17,7 @@ class WebController {
   void sendStatus();
   void sendSettings();
   void saveSettings();
+  void saveE5cc();
   void saveRecipe();
   void saveNetwork();
   void commandBrew();

@@ -13,14 +13,39 @@ constexpr uint32_t kResponseTimeoutMs = 180;
 }  // namespace
 
 void E5ccModbus::begin() {
+  configure(config_);
+}
+
+bool E5ccModbus::configurationMatches(const E5ccConfig& config) const {
+  return config_.slaveId == config.slaveId &&
+         config_.baud == config.baud &&
+         config_.parity == config.parity &&
+         config_.pvRegister == config.pvRegister &&
+         config_.spRegister == config.spRegister &&
+         fabsf(config_.temperatureScale - config.temperatureScale) <
+             0.001f;
+}
+
+void E5ccModbus::configure(const E5ccConfig& config) {
+  config_ = config;
   if (user_config::PIN_RS485_DE >= 0) {
     pinMode(user_config::PIN_RS485_DE, OUTPUT);
     setTransmit(false);
   }
-  modbusSerial.begin(user_config::E5CC_BAUD, SERIAL_8E1,
+
+  uint32_t serialConfig = SERIAL_8E1;
+  if (config_.parity == E5ccParity::kNone) {
+    serialConfig = SERIAL_8N1;
+  } else if (config_.parity == E5ccParity::kOdd) {
+    serialConfig = SERIAL_8O1;
+  }
+
+  modbusSerial.end();
+  modbusSerial.begin(config_.baud, serialConfig,
                      user_config::PIN_RS485_RX,
                      user_config::PIN_RS485_TX);
   modbusSerial.setTimeout(30);
+  consecutiveFailures_ = 0;
   while (modbusSerial.available()) {
     modbusSerial.read();
   }
@@ -83,7 +108,7 @@ bool E5ccModbus::transact(const uint8_t* request, size_t requestLength,
 
 bool E5ccModbus::readRegister(uint16_t address, uint16_t& value) {
   uint8_t request[8] = {
-      user_config::E5CC_SLAVE_ID,
+      config_.slaveId,
       0x03,
       static_cast<uint8_t>(address >> 8),
       static_cast<uint8_t>(address & 0xFF),
@@ -109,7 +134,7 @@ bool E5ccModbus::readRegister(uint16_t address, uint16_t& value) {
 
 bool E5ccModbus::writeRegister(uint16_t address, uint16_t value) {
   uint8_t request[8] = {
-      user_config::E5CC_SLAVE_ID,
+      config_.slaveId,
       0x06,
       static_cast<uint8_t>(address >> 8),
       static_cast<uint8_t>(address & 0xFF),
@@ -136,27 +161,27 @@ bool E5ccModbus::writeRegister(uint16_t address, uint16_t value) {
 
 bool E5ccModbus::readPv(float& celsius) {
   uint16_t raw = 0;
-  if (!readRegister(user_config::E5CC_PV_REGISTER, raw)) {
+  if (!readRegister(config_.pvRegister, raw)) {
     return false;
   }
   celsius =
-      static_cast<int16_t>(raw) * user_config::E5CC_TEMPERATURE_SCALE;
+      static_cast<int16_t>(raw) * config_.temperatureScale;
   return true;
 }
 
 bool E5ccModbus::readSp(float& celsius) {
   uint16_t raw = 0;
-  if (!readRegister(user_config::E5CC_SP_REGISTER, raw)) {
+  if (!readRegister(config_.spRegister, raw)) {
     return false;
   }
   celsius =
-      static_cast<int16_t>(raw) * user_config::E5CC_TEMPERATURE_SCALE;
+      static_cast<int16_t>(raw) * config_.temperatureScale;
   return true;
 }
 
 bool E5ccModbus::writeSp(float celsius) {
   const int16_t scaled = static_cast<int16_t>(
-      lroundf(celsius / user_config::E5CC_TEMPERATURE_SCALE));
-  return writeRegister(user_config::E5CC_SP_REGISTER,
+      lroundf(celsius / config_.temperatureScale));
+  return writeRegister(config_.spRegister,
                        static_cast<uint16_t>(scaled));
 }
