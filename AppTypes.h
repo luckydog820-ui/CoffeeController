@@ -31,6 +31,11 @@ enum class PumpSource : uint8_t {
   kSafety,
 };
 
+constexpr uint8_t kMaxRecipes = 8;
+constexpr uint8_t kRecipeNameLength = 32;
+constexpr uint8_t kWifiSsidLength = 32;
+constexpr uint8_t kWifiPasswordLength = 63;
+
 struct BrewProfile {
   float preinfusionVoltage = 1.2f;
   uint32_t preinfusionTimeMs = 4000;
@@ -47,10 +52,30 @@ struct PidConfig {
   float kd = 0.02f;
 };
 
+struct Recipe {
+  char name[kRecipeNameLength + 1] = {};
+  BrewProfile profile;
+};
+
+struct RecipeLibrary {
+  Recipe items[kMaxRecipes];
+  uint8_t count = 0;
+  uint8_t activeIndex = 0;
+};
+
+struct NetworkConfig {
+  char stationSsid[kWifiSsidLength + 1] = {};
+  char stationPassword[kWifiPasswordLength + 1] = {};
+  char accessPointSsid[kWifiSsidLength + 1] = {};
+  char accessPointPassword[kWifiPasswordLength + 1] = {};
+};
+
 struct RuntimeSettings {
   BrewProfile profile;
   PidConfig pid;
   float boilerSetpointC = 93.0f;
+  RecipeLibrary recipes;
+  NetworkConfig network;
 };
 
 struct ControllerSnapshot {

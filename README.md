@@ -2,7 +2,7 @@
 
 这是按 Arduino IDE 结构实现的 ESP32-S3 控制器骨架，面向欧姆龙 E5CC、增压泵、压力变送器、手动旋钮和自动萃取按钮。当前版本重点是把安全边界、并发路径和手机操作界面先搭稳，再接真实水路整定。
 
-当前固件版本为 `0.3.0`。目标硬件为第三方 **ESP32-S3-N16R8**：16 MB Flash、8 MB OPI PSRAM。
+当前固件版本为 `0.4.0`。目标硬件为第三方 **ESP32-S3-N16R8**：16 MB Flash、8 MB OPI PSRAM。
 
 ## 相比原方案的调整
 
@@ -15,6 +15,8 @@
 7. **启动安全默认值**：上电先关闭泵；旋钮开关默认按接地有效的低电平处理；泵使能默认关断。
 8. **控制任务心跳兜底**：安全任务在另一核心检查控制任务心跳。若控制任务卡死，先切断泵，再重启系统。
 9. **独立设备热点**：上电后立即启动 `CoffeePilot` AP，家庭 Wi-Fi 作为可选 STA 同时工作；STA 断线不会关闭 AP，网页始终保留本地入口。
+10. **多配方与主页快捷切换**：最多保存 8 个萃取配方，参数写入 NVS；主页可在开始萃取前选择当前配方。
+11. **设置页分组**：锅炉温度与压力 PID 集中在一组，Wi-Fi 连接和设备热点可以在手机页面配置并持久保存。
 
 ## Arduino 工程结构
 
@@ -85,7 +87,7 @@ Wi-Fi 协议栈仍在 Core 0，压力控制和 E5CC 轮询放在 Core 1。网页
 2. 打开 `CoffeeController/CoffeeController.ino`。
 3. 开发板选择 `ESP32S3 Dev Module`。
 4. 建议参数：Flash Size `16MB`、PSRAM `OPI PSRAM`、Partition Scheme 选择适合 16 MB Flash 的方案、USB CDC On Boot `Enabled`。
-5. 修改 `UserConfig.h` 中的家庭 Wi-Fi 可选；留空时只开启设备热点。
+5. `UserConfig.h` 中的家庭 Wi-Fi 和热点密码只作为首次启动默认值；之后可在手机“设备设置”中修改并保存。
 6. 先只接 USB，不接泵主电源，执行编译和上传。
 7. 手机连接热点 `CoffeePilot`，密码 `CoffeePilot-1234`，浏览器打开 `http://192.168.4.1`。
 8. 若已配置家庭 Wi-Fi，也可访问 `http://coffee.local` 或串口日志中显示的 STA IP。
@@ -97,8 +99,10 @@ Wi-Fi 协议栈仍在 Core 0，压力控制和 E5CC 轮询放在 Core 1。网页
 | 方法 | 路径 | 用途 |
 |---|---|---|
 | GET | `/api/status` | 温度、压力、状态、故障、计时、通信信息 |
-| GET | `/api/settings` | 配方、温度目标、PID 参数 |
-| POST | `/api/settings` | 保存参数；自动或手动输出期间返回 409 |
+| GET | `/api/settings` | 配方列表、当前配方、温度目标、PID、网络摘要 |
+| POST | `/api/settings` | 保存锅炉目标温度和 PID；萃取期间返回 409 |
+| POST | `/api/recipes` | 选择、保存或删除配方，最多 8 个 |
+| POST | `/api/network` | 保存家庭 Wi-Fi 或设备热点配置并重新连接 |
 | POST | `/api/brew` | `start`、`stop` 或 `toggle` |
 | POST | `/api/fault/reset` | 在安全条件满足后清除锁存 |
 | GET | `/api/health` | 固件健康检查 |

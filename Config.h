@@ -5,7 +5,7 @@
 
 namespace config {
 
-constexpr char FIRMWARE_VERSION[] = "0.3.0";
+constexpr char FIRMWARE_VERSION[] = "0.4.0";
 constexpr char DEVICE_NAME[] = "CoffeePilot";
 constexpr char BOARD_MODEL[] = "ESP32-S3-N16R8";
 

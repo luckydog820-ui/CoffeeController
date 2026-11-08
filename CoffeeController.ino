@@ -47,6 +47,9 @@ namespace {
 bool gStationConfigured = false;
 uint32_t gLastWifiRetryMs = 0;
 bool gLastStationConnected = false;
+bool gNetworkStarted = false;
+bool gMdnsStarted = false;
+NetworkConfig gAppliedNetwork;
 
 bool buttonPressed() {
   const bool level =
@@ -85,10 +88,21 @@ float readKnobVoltage() {
   return constrain(pinVolts * ratio, 0.0f, user_config::PUMP_MAX_VOLTS);
 }
 
-bool startNetwork() {
+bool networkConfigEqual(const NetworkConfig& left,
+                        const NetworkConfig& right) {
+  return strcmp(left.stationSsid, right.stationSsid) == 0 &&
+         strcmp(left.stationPassword, right.stationPassword) == 0 &&
+         strcmp(left.accessPointSsid, right.accessPointSsid) == 0 &&
+         strcmp(left.accessPointPassword, right.accessPointPassword) == 0;
+}
+
+bool startNetwork(const NetworkConfig& network) {
   WiFi.persistent(false);
   WiFi.setSleep(false);
-  gStationConfigured = strlen(user_config::WIFI_SSID) > 0;
+  gStationConfigured = strlen(network.stationSsid) > 0;
+
+  WiFi.softAPdisconnect(true);
+  WiFi.disconnect(true, false);
 
   // AP 与可选 STA 同时工作。即使家庭 Wi-Fi 未配置或暂时离线，
   // 手机也能在开机后直接连接设备热点访问网页。
@@ -100,36 +114,49 @@ bool startNetwork() {
   }
 
   const bool apStarted =
-      WiFi.softAP(user_config::AP_SSID, user_config::AP_PASSWORD);
+      WiFi.softAP(network.accessPointSsid,
+                  network.accessPointPassword);
   if (!apStarted) {
     Serial.println("CoffeePilot access point failed to start");
     return false;
   }
   Serial.print("AP SSID: ");
-  Serial.println(user_config::AP_SSID);
+  Serial.println(network.accessPointSsid);
   Serial.print("AP password: ");
-  Serial.println(user_config::AP_PASSWORD);
+  Serial.println(network.accessPointPassword);
   Serial.print("Web: http://");
   Serial.println(WiFi.softAPIP());
 
   if (gStationConfigured) {
     WiFi.setHostname("coffee-pilot");
-    WiFi.begin(user_config::WIFI_SSID, user_config::WIFI_PASSWORD);
+    WiFi.begin(network.stationSsid, network.stationPassword);
     gLastWifiRetryMs = millis();
     Serial.print("Joining Wi-Fi: ");
-    Serial.println(user_config::WIFI_SSID);
+    Serial.println(network.stationSsid);
   }
 
-  if (MDNS.begin(user_config::MDNS_HOST)) {
+  if (!gMdnsStarted && MDNS.begin(user_config::MDNS_HOST)) {
     MDNS.addService("http", "tcp", 80);
+    gMdnsStarted = true;
     Serial.print("mDNS: http://");
     Serial.print(user_config::MDNS_HOST);
     Serial.println(".local");
   }
+  gAppliedNetwork = network;
+  gNetworkStarted = true;
+  gLastStationConnected = false;
   return true;
 }
 
 void serviceNetwork(uint32_t nowMs) {
+  const RuntimeSettings settings = gState.settings().settings;
+  if (!gNetworkStarted ||
+      !networkConfigEqual(gAppliedNetwork, settings.network)) {
+    Serial.println("Applying network configuration");
+    if (!startNetwork(settings.network)) {
+      gNetworkStarted = false;
+    }
+  }
   if (!gStationConfigured) {
     return;
   }
@@ -152,7 +179,8 @@ void serviceNetwork(uint32_t nowMs) {
   }
 
   Serial.println("Retrying station Wi-Fi");
-  WiFi.begin(user_config::WIFI_SSID, user_config::WIFI_PASSWORD);
+  WiFi.begin(settings.network.stationSsid,
+             settings.network.stationPassword);
   gLastWifiRetryMs = nowMs;
 }
 
@@ -459,7 +487,7 @@ void setup() {
   // 启动网络期间泵保持关闭，避免网络等待造成意外输出。
   gPump.begin();
   gPump.setVoltage(0.0f);
-  if (startNetwork()) {
+  if (startNetwork(savedSettings.network)) {
     gWeb.begin();
   } else {
     Serial.println("FATAL: web server not started because networking failed");

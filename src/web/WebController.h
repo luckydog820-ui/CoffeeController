@@ -17,9 +17,12 @@ class WebController {
   void sendStatus();
   void sendSettings();
   void saveSettings();
+  void saveRecipe();
+  void saveNetwork();
   void commandBrew();
   void resetFault();
   bool readSettingsFromJson(const String& body, RuntimeSettings& settings);
+  bool readRecipeFromJson(const String& body, BrewProfile& profile);
 
   ControllerState& state_;
   SettingsStore& settingsStore_;

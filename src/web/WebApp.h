@@ -15,7 +15,7 @@ static const char kIndexHtml[] PROGMEM = R"COFFEEHTML(<!doctype html>
 *{box-sizing:border-box}
 html{background:var(--bg)}
 body{margin:0;min-height:100svh;background:radial-gradient(circle at 84% -10%,rgba(208,130,55,.22),transparent 34rem),radial-gradient(circle at -12% 38%,rgba(114,66,38,.18),transparent 28rem),linear-gradient(155deg,#17110e,#120e0c 70%);color:var(--text);font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
-button,input{font:inherit}
+button,input,select{font:inherit}
 button{-webkit-tap-highlight-color:transparent}
 .shell{width:min(100%,760px);margin:0 auto;padding:max(18px,env(safe-area-inset-top)) 16px calc(108px + env(safe-area-inset-bottom))}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
@@ -54,6 +54,13 @@ button{-webkit-tap-highlight-color:transparent}
 .brew-zone{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:13px 0 12px;padding:14px 8px 14px 17px;background:linear-gradient(135deg,rgba(233,181,108,.13),rgba(38,27,22,.88));border:1px solid rgba(232,183,111,.19);border-radius:22px}
 .brew-copy strong{display:block;font-size:15px;font-weight:620}
 .brew-copy span{display:block;color:var(--muted);font-size:12px;line-height:1.45;margin-top:5px;max-width:210px}
+.brew-actions{display:flex;align-items:center;gap:10px;flex:none}
+.recipe-picker{width:112px;min-width:0}
+.recipe-picker span{display:block;color:var(--muted);font-size:10px;letter-spacing:.05em;margin:0 0 5px 2px}
+.recipe-picker select,.text-input,.recipe-toolbar select{width:100%;border:1px solid var(--line);border-radius:12px;background:#1b1310;color:var(--text);outline:0;min-height:42px;padding:0 11px}
+.recipe-picker select{font-size:12px;text-overflow:ellipsis}
+.recipe-picker select:focus,.text-input:focus,.recipe-toolbar select:focus{border-color:rgba(232,183,111,.55);box-shadow:0 0 0 3px rgba(232,183,111,.1)}
+select option{background:#211814;color:var(--text)}
 .brew-button{width:92px;height:92px;flex:none;border:0;border-radius:50%;background:linear-gradient(145deg,#f4c781,#db9148 64%,#aa602b);color:#2d180b;box-shadow:0 13px 33px rgba(210,130,56,.3),inset 0 1px 0 rgba(255,255,255,.58);display:grid;place-items:center;cursor:pointer;transition:transform .16s,filter .16s;font-weight:760;font-size:15px;touch-action:manipulation}
 .brew-button:active{transform:scale(.96)}
 .brew-button.stop{background:linear-gradient(145deg,#ff9b8d,#d9584e);color:#2b0d0a;box-shadow:0 13px 33px rgba(214,73,63,.28)}
@@ -75,6 +82,27 @@ canvas{width:100%;height:100%;display:block}
 .section-head h2{font-size:24px;line-height:1.1;margin:0;font-weight:610;letter-spacing:-.025em}
 .section-head p{color:var(--muted);font-size:12px;line-height:1.5;margin:7px 0 0}
 .panel-card{padding:5px 17px;margin-bottom:12px;box-shadow:none}
+.recipe-toolbar{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:end;padding:15px 0 12px;border-bottom:1px solid var(--line)}
+.recipe-toolbar label{display:block;color:var(--muted);font-size:11px}
+.recipe-toolbar select{margin-top:6px}
+.compact{min-height:42px;padding:0 14px;white-space:nowrap}
+.recipe-name{display:block;padding:15px 0 2px}
+.recipe-name span{display:block;color:var(--muted);font-size:11px;margin-bottom:7px}
+.recipe-footer{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0 8px}
+.recipe-footer .primary,.recipe-footer .secondary,.recipe-footer .danger{flex:1;min-width:132px;padding:0 12px}
+.setting-group{padding:0;overflow:hidden}
+.setting-group summary{list-style:none;cursor:pointer;min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 17px}
+.setting-group summary::-webkit-details-marker{display:none}
+.setting-group summary strong{display:block;font-size:14px;font-weight:620}
+.setting-group summary small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.setting-group .chevron{width:9px;height:9px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);transition:transform .2s;flex:none;margin-right:3px}
+.setting-group[open] .chevron{transform:rotate(225deg)}
+.group-content{padding:0 17px 7px;border-top:1px solid var(--line)}
+.field-stack{display:grid;gap:12px;padding:15px 0 10px}
+.field-stack label{display:block;color:var(--muted);font-size:11px}
+.field-stack label span{display:block;margin-bottom:7px}
+.field-stack small{display:block;color:var(--muted);font-size:10px;line-height:1.5;margin-top:6px}
+.network-save{width:100%;margin:2px 0 7px}
 .setting{padding:16px 0;border-bottom:1px solid var(--line)}
 .setting:last-child{border:0}
 .setting-label{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -113,6 +141,14 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
 .dialog-box p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
 .dialog-actions{display:flex;gap:9px;margin-top:20px}
 .dialog-actions button{flex:1}
+@media(max-width:430px){
+ .brew-zone{gap:9px;padding-left:14px;padding-right:6px}
+ .brew-copy span{max-width:165px}
+ .brew-actions{gap:7px}
+ .recipe-picker{width:98px}
+ .brew-button{width:82px;height:82px;font-size:13px}
+ .recipe-toolbar{grid-template-columns:1fr 68px}
+}
 @media(min-width:700px){
  .shell{padding-top:32px}
  .overview-grid{display:grid;grid-template-columns:.92fr 1.08fr;gap:12px;align-items:start}
@@ -167,9 +203,12 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
               <strong id="brewTitle">自动萃取</strong>
               <span id="brewDescription">预热完成后即可开始一杯</span>
             </div>
-            <button class="brew-button" id="brewButton" disabled aria-label="开始萃取">
-              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v8m0 0 3-3m-3 3-3-3"/><path d="M5 14c1.8 3 4.1 4.5 7 4.5s5.2-1.5 7-4.5M4 21h16"/></svg><span id="brewButtonText">开始</span></span>
-            </button>
+            <div class="brew-actions">
+              <label class="recipe-picker"><span>萃取配方</span><select id="activeRecipe" aria-label="选择萃取配方"></select></label>
+              <button class="brew-button" id="brewButton" disabled aria-label="开始萃取">
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v8m0 0 3-3m-3 3-3-3"/><path d="M5 14c1.8 3 4.1 4.5 7 4.5s5.2-1.5 7-4.5M4 21h16"/></svg><span id="brewButtonText">开始</span></span>
+              </button>
+            </div>
           </div>
 
           <article class="chart-card">
@@ -190,8 +229,13 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
     </section>
 
     <section class="view" data-view="recipe" hidden>
-      <div class="section-head"><h2>萃取配方</h2><p>先调整目标，再开始萃取。运行中禁止保存，避免中途改变安全边界。</p></div>
+      <div class="section-head"><h2>萃取配方</h2><p>最多保存 8 个配方。主页开始萃取前可直接切换；运行中禁止修改。</p></div>
       <div class="panel-card">
+        <div class="recipe-toolbar">
+          <label>当前配方<select id="recipeSelect" aria-label="当前保存的配方"></select></label>
+          <button class="danger compact" id="deleteRecipe">删除</button>
+        </div>
+        <label class="recipe-name"><span>配方名称</span><input class="text-input" id="recipeName" maxlength="12" autocomplete="off" placeholder="例如：晨间浓缩"></label>
         <div class="setting">
           <div class="setting-label"><label for="preVoltage">预浸泡泵电压</label><output id="preVoltageOut"></output></div>
           <input type="range" id="preVoltage" min="0" max="3" step="0.05">
@@ -215,40 +259,75 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
           <small>软件强制断电阈值；硬件仍应保留机械/电气保护。</small>
         </div>
       </div>
-      <div class="save-row"><span class="save-note">参数保存在设备 NVS</span><button class="primary" id="saveRecipe">保存配方</button></div>
+      <div class="recipe-footer">
+        <button class="secondary" id="saveRecipeAs">另存为新配方</button>
+        <button class="primary" id="saveRecipe">保存当前配方</button>
+      </div>
+      <p class="hint">当前配方会用于主页“开始萃取”。切换配方只影响后续萃取，不会在中途改变正在运行的压力目标。</p>
     </section>
 
     <section class="view" data-view="system" hidden>
-      <div class="section-head"><h2>设备设置</h2><p>温度由 E5CC 闭环，ESP32-S3 只写入设定值并监控回读。</p></div>
-      <div class="panel-card">
-        <div class="setting">
-          <div class="setting-label"><label for="boilerSp">锅炉目标温度</label><output id="boilerSpOut"></output></div>
-          <input type="range" id="boilerSp" min="70" max="100" step="0.5">
-        </div>
-        <div class="setting">
-          <div class="setting-label"><label for="pidKp">压力环 Kp</label><output id="pidKpOut"></output></div>
-          <input type="range" id="pidKp" min="0" max="3" step="0.05">
-        </div>
-        <div class="setting">
-          <div class="setting-label"><label for="pidKi">压力环 Ki</label><output id="pidKiOut"></output></div>
-          <input type="range" id="pidKi" min="0" max="3" step="0.05">
-        </div>
-        <div class="setting">
-          <div class="setting-label"><label for="pidKd">压力环 Kd</label><output id="pidKdOut"></output></div>
-          <input type="range" id="pidKd" min="0" max="1" step="0.01">
-          <small>建议从 PI 开始整定，压力曲线稳定后再启用 D。</small>
-        </div>
-      </div>
-      <div class="save-row"><span class="save-note">修改后需重新达到目标温度</span><button class="primary" id="saveSystem">保存设置</button></div>
+      <div class="section-head"><h2>设备设置</h2><p>按类别展开设置。保存网络配置会短暂重启热点或家庭 Wi-Fi 连接。</p></div>
 
-      <div class="panel-card" style="margin-top:16px">
-        <div class="system-row"><div>E5CC Modbus<span id="modbusDetail">等待状态</span></div><b class="pill" id="modbusPill">--</b></div>
-        <div class="system-row"><div>压力传感器<span id="sensorDetail">等待状态</span></div><b class="pill" id="sensorPill">--</b></div>
-        <div class="system-row"><div>网络地址<span id="ipDetail">--</span></div><b class="pill" id="wifiPill">Wi-Fi</b></div>
-        <div class="system-row"><div>设备热点<span id="apDetail">--</span></div><b class="pill" id="apPill">--</b></div>
-        <div class="system-row"><div>硬件型号<span id="boardDetail">--</span></div><span id="firmwareVersion">--</span></div>
-        <div class="system-row"><div>空闲内存<span id="heapDetail">--</span></div><span>ESP32-S3</span></div>
-      </div>
+      <details class="panel-card setting-group" open>
+        <summary><div><strong>温度与压力控制</strong><small>锅炉目标温度与压力环 PID</small></div><i class="chevron"></i></summary>
+        <div class="group-content">
+          <div class="setting">
+            <div class="setting-label"><label for="boilerSp">锅炉目标温度</label><output id="boilerSpOut"></output></div>
+            <input type="range" id="boilerSp" min="70" max="100" step="0.5">
+          </div>
+          <div class="setting">
+            <div class="setting-label"><label for="pidKp">压力环 Kp</label><output id="pidKpOut"></output></div>
+            <input type="range" id="pidKp" min="0" max="3" step="0.05">
+          </div>
+          <div class="setting">
+            <div class="setting-label"><label for="pidKi">压力环 Ki</label><output id="pidKiOut"></output></div>
+            <input type="range" id="pidKi" min="0" max="3" step="0.05">
+          </div>
+          <div class="setting">
+            <div class="setting-label"><label for="pidKd">压力环 Kd</label><output id="pidKdOut"></output></div>
+            <input type="range" id="pidKd" min="0" max="1" step="0.01">
+            <small>建议从 PI 开始整定，压力曲线稳定后再启用 D。</small>
+          </div>
+          <button class="primary network-save" id="saveSystem">保存温度与 PID</button>
+        </div>
+      </details>
+
+      <details class="panel-card setting-group">
+        <summary><div><strong>Wi-Fi 连接</strong><small>连接家庭或办公室无线网络</small></div><i class="chevron"></i></summary>
+        <div class="group-content">
+          <div class="field-stack">
+            <label><span>Wi-Fi 名称（SSID）</span><input class="text-input" id="wifiSsid" maxlength="32" autocomplete="off" placeholder="留空只保留设备热点"></label>
+            <label><span>Wi-Fi 密码</span><input class="text-input" id="wifiPassword" type="password" maxlength="63" autocomplete="new-password" placeholder="留空保持当前密码"></label>
+            <small>保存后设备会尝试连接新的家庭 Wi-Fi。连接失败时设备热点仍可用。</small>
+            <button class="primary network-save" id="saveWifi">保存并连接 Wi-Fi</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="panel-card setting-group">
+        <summary><div><strong>设备热点</strong><small>配置手机直连热点名称和密码</small></div><i class="chevron"></i></summary>
+        <div class="group-content">
+          <div class="field-stack">
+            <label><span>热点名称</span><input class="text-input" id="apSsid" maxlength="32" autocomplete="off"></label>
+            <label><span>热点密码</span><input class="text-input" id="apPassword" type="password" minlength="8" maxlength="63" autocomplete="new-password" placeholder="留空保持当前密码"></label>
+            <small>密码至少 8 位。修改后当前手机会断开，需要用新的热点名称和密码重新连接。</small>
+            <button class="primary network-save" id="saveAp">保存热点设置</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="panel-card setting-group">
+        <summary><div><strong>设备与通信状态</strong><small>传感器、Modbus 和网络诊断</small></div><i class="chevron"></i></summary>
+        <div class="group-content">
+          <div class="system-row"><div>E5CC Modbus<span id="modbusDetail">等待状态</span></div><b class="pill" id="modbusPill">--</b></div>
+          <div class="system-row"><div>压力传感器<span id="sensorDetail">等待状态</span></div><b class="pill" id="sensorPill">--</b></div>
+          <div class="system-row"><div>网络地址<span id="ipDetail">--</span></div><b class="pill" id="wifiPill">Wi-Fi</b></div>
+          <div class="system-row"><div>设备热点<span id="apDetail">--</span></div><b class="pill" id="apPill">--</b></div>
+          <div class="system-row"><div>硬件型号<span id="boardDetail">--</span></div><span id="firmwareVersion">--</span></div>
+          <div class="system-row"><div>空闲内存<span id="heapDetail">--</span></div><span>ESP32-S3</span></div>
+        </div>
+      </details>
       <button class="danger" id="resetFault" style="width:100%;margin-top:2px">安全故障复位</button>
       <p class="hint">复位前确认压力已释放、温度低于上限、旋钮在关断位且 E5CC 通信恢复。故障复位不能替代硬件急停。</p>
     </section>
@@ -283,6 +362,7 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
   let points = [];
   let toastTimer = 0;
   let pollTimer = 0;
+  let recipeBusy = false;
 
   function toast(text){
     const el = $("toast");
@@ -371,12 +451,22 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
     const manual = s.brewState === "MANUAL";
     const fault = s.faultMask !== 0 || s.brewState === "FAULT";
     const ready = s.brewState === "READY";
+    const locked = brewing || manual;
     const button = $("brewButton");
     button.disabled = fault || manual || (!brewing && !ready);
     button.classList.toggle("stop", brewing);
     $("brewButtonText").textContent = brewing ? "停止" : "开始";
     button.setAttribute("aria-label", brewing ? "停止萃取" : "开始萃取");
-    $("brewTitle").textContent = brewing ? `${meta[0]} · ${((s.brewElapsedMs||0)/1000).toFixed(1)}s` : (manual ? "手动控制中" : "自动萃取");
+    $("activeRecipe").disabled = locked || recipeBusy;
+    $("recipeSelect").disabled = locked || recipeBusy;
+    $("saveRecipe").disabled = locked;
+    $("saveRecipeAs").disabled = locked || (settings?.recipes?.length || 0) >= 8;
+    $("deleteRecipe").disabled = locked || (settings?.recipes?.length || 0) <= 1;
+    if(Number.isInteger(s.activeRecipeIndex) && $("activeRecipe").options.length){
+      $("activeRecipe").value = String(s.activeRecipeIndex);
+      $("recipeSelect").value = String(s.activeRecipeIndex);
+    }
+    $("brewTitle").textContent = brewing ? `${meta[0]} · ${((s.brewElapsedMs||0)/1000).toFixed(1)}s` : (manual ? "手动控制中" : (s.activeRecipeName ? `自动萃取 · ${s.activeRecipeName}` : "自动萃取"));
     $("brewDescription").textContent = brewing ? "点击停止会立即进入泵归零流程" : manual ? "旋钮离开关断位时自动程序保持中止" : (ready ? "锅炉已到位，可以开始一杯" : "预热完成后即可开始一杯");
 
     points.push({p:s.pressure, t:s.tempPv, time:Date.now()});
@@ -452,6 +542,25 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
       const input=$(id); input.value=Number(value).toFixed(digits); setRangeFill(input);
     });
     refreshers.forEach(fn=>fn());
+    renderRecipeOptions();
+  }
+
+  function renderRecipeOptions(){
+    const recipes = Array.isArray(settings?.recipes) ? settings.recipes : [];
+    const active = Math.max(0, Number(settings?.activeRecipeIndex) || 0);
+    ["activeRecipe","recipeSelect"].forEach(id=>{
+      const select=$(id);
+      select.replaceChildren();
+      recipes.forEach((recipe,index)=>select.add(new Option(recipe.name,index)));
+      if(recipes.length) select.value=String(active);
+    });
+    $("recipeName").value = settings?.activeRecipeName || recipes[active]?.name || "";
+    $("deleteRecipe").disabled = recipes.length <= 1;
+    $("saveRecipeAs").disabled = recipes.length >= 8;
+    $("wifiSsid").value = settings?.wifiSsid || "";
+    $("apSsid").value = settings?.apSsid || "";
+    $("wifiPassword").value = "";
+    $("apPassword").value = "";
   }
 
   async function loadSettings(){
@@ -459,30 +568,76 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
     catch(error){ toast("配方读取失败"); }
   }
 
-  function collectSettings(includeRecipe=true, includeSystem=true){
-    const body={};
-    if(includeRecipe){
-      body.preVoltage=Number($("preVoltage").value);
-      body.preTimeMs=Math.round(Number($("preTime").value)*1000);
-      body.extractionPressure=Number($("extractionPressure").value);
-      body.extractionTimeMs=Math.round(Number($("extractionTime").value)*1000);
-      body.maxPressure=Number($("maxPressure").value);
-    }
-    if(includeSystem){
-      body.boilerSp=Number($("boilerSp").value);
-      body.pidKp=Number($("pidKp").value);
-      body.pidKi=Number($("pidKi").value);
-      body.pidKd=Number($("pidKd").value);
-    }
-    return body;
+  function collectRecipe(){
+    return {
+      preVoltage:Number($("preVoltage").value),
+      preTimeMs:Math.round(Number($("preTime").value)*1000),
+      extractionPressure:Number($("extractionPressure").value),
+      extractionTimeMs:Math.round(Number($("extractionTime").value)*1000),
+      maxPressure:Number($("maxPressure").value)
+    };
   }
 
-  async function saveSettings(includeRecipe, includeSystem){
-    const button = includeRecipe ? $("saveRecipe") : $("saveSystem");
+  async function selectRecipe(index, quiet=false){
+    recipeBusy=true;
+    try{
+      await getJson("/api/recipes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"select",index:Number(index)})});
+      await loadSettings();
+      await poll();
+      if(!quiet) toast("已切换萃取配方");
+    }catch(error){
+      if(!quiet) toast(error.message === "stop_before_saving" ? "请先停止当前萃取" : "配方切换失败");
+      throw error;
+    }finally{
+      recipeBusy=false;
+    }
+  }
+
+  async function saveRecipeItem(asNew){
+    const name=$("recipeName").value.trim();
+    if(!name){toast("请先输入配方名称");return;}
+    const index=asNew ? -1 : Number(settings?.activeRecipeIndex ?? 0);
+    const body={action:"save",name,index,...collectRecipe()};
+    const button=asNew ? $("saveRecipeAs") : $("saveRecipe");
     button.disabled=true;
     try{
-      await getJson("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(collectSettings(includeRecipe,includeSystem))});
-      toast("设置已保存");
+      await getJson("/api/recipes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      toast(asNew ? "已保存为新配方" : "当前配方已保存");
+      await loadSettings();
+      await poll();
+    }catch(error){
+      const messages={stop_before_saving:"请先停止当前萃取或手动输出",recipe_limit:"最多只能保存 8 个配方",recipe_name_too_long:"配方名称过长"};
+      toast(messages[error.message] || "配方保存失败，请检查连接");
+    }finally{button.disabled=false;}
+  }
+
+  async function deleteCurrentRecipe(){
+    if(!settings || settings.recipes.length <= 1) return;
+    if(!confirm(`确定删除“${settings.activeRecipeName}”吗？`)) return;
+    $("deleteRecipe").disabled=true;
+    try{
+      await getJson("/api/recipes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"delete",index:settings.activeRecipeIndex})});
+      toast("配方已删除");
+      await loadSettings();
+      await poll();
+    }catch(error){
+      toast(error.message === "last_recipe" ? "至少保留一个配方" : "删除失败");
+    }finally{
+      $("deleteRecipe").disabled=!settings || settings.recipes.length <= 1;
+    }
+  }
+
+  async function saveSystemSettings(){
+    const button=$("saveSystem");
+    button.disabled=true;
+    try{
+      await getJson("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        boilerSp:Number($("boilerSp").value),
+        pidKp:Number($("pidKp").value),
+        pidKi:Number($("pidKi").value),
+        pidKd:Number($("pidKd").value)
+      })});
+      toast("温度与 PID 设置已保存");
       await loadSettings();
       await poll();
     }catch(error){
@@ -490,14 +645,45 @@ dialog::backdrop{background:rgba(8,5,4,.68);backdrop-filter:blur(7px)}
     }finally{button.disabled=false;}
   }
 
-  $("saveRecipe").addEventListener("click",()=>saveSettings(true,false));
-  $("saveSystem").addEventListener("click",()=>saveSettings(false,true));
+  async function saveNetworkSettings(section){
+    const button=section === "wifi" ? $("saveWifi") : $("saveAp");
+    const body=section === "wifi"
+      ? {wifiSsid:$("wifiSsid").value.trim(),wifiPassword:$("wifiPassword").value}
+      : {apSsid:$("apSsid").value.trim(),apPassword:$("apPassword").value};
+    button.disabled=true;
+    try{
+      await getJson("/api/network",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      toast(section === "wifi" ? "Wi-Fi 配置已保存，正在重新连接" : "热点配置已保存，请用新名称重新连接");
+      if(section === "ap") setConnection(false);
+      $("wifiPassword").value="";
+      $("apPassword").value="";
+      setTimeout(()=>loadSettings().then(poll),3500);
+    }catch(error){
+      const messages={stop_before_saving:"请先停止当前萃取",invalid_ap_password:"热点密码至少需要 8 位",invalid_ap_ssid:"请输入有效的热点名称"};
+      toast(messages[error.message] || "网络设置保存失败");
+    }finally{button.disabled=false;}
+  }
+
+  $("recipeSelect").addEventListener("change",event=>selectRecipe(Number(event.target.value)).catch(()=>loadSettings()));
+  $("activeRecipe").addEventListener("change",event=>selectRecipe(Number(event.target.value)).catch(()=>loadSettings()));
+  $("saveRecipe").addEventListener("click",()=>saveRecipeItem(false));
+  $("saveRecipeAs").addEventListener("click",()=>saveRecipeItem(true));
+  $("deleteRecipe").addEventListener("click",deleteCurrentRecipe);
+  $("saveSystem").addEventListener("click",saveSystemSettings);
+  $("saveWifi").addEventListener("click",()=>saveNetworkSettings("wifi"));
+  $("saveAp").addEventListener("click",()=>saveNetworkSettings("ap"));
 
   $("brewButton").addEventListener("click", async()=>{
     if(!status) return;
     const action=isBrewing(status)?"stop":"start";
     $("brewButton").disabled=true;
     try{
+      if(action === "start" && settings){
+        const selected=Number($("activeRecipe").value);
+        if(Number.isInteger(selected) && selected !== settings.activeRecipeIndex){
+          await selectRecipe(selected,true);
+        }
+      }
       await getJson("/api/brew",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action})});
       setTimeout(poll,180);
     }catch(error){
